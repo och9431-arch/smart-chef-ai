@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>스마트 셰프 AI | 우리집 냉장고 영양 플래너</title>
+<style>
+:root{
+  --bg:#f7f8f2; --card:#ffffff; --ink:#20231e; --muted:#71766e;
+  --green:#557a46; --green2:#dcead7; --line:#e5e8e1; --cream:#fff7e7;
+  --orange:#eaa85b; --red:#d86557; --shadow:0 10px 30px rgba(34,50,26,.08);
+}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#f8f9f5 0,#f3f5ef 100%);color:var(--ink);
+font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.app{max-width:1180px;margin:auto;padding:24px}
+.header{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:48px;height:48px;border-radius:15px;background:var(--green);display:grid;place-items:center;color:white;font-size:24px;box-shadow:var(--shadow)}
+h1{margin:0;font-size:26px}
+.sub{color:var(--muted);font-size:14px;margin-top:4px}
+.today{background:var(--card);border:1px solid var(--line);padding:11px 14px;border-radius:14px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:var(--shadow)}
+.card h2{font-size:18px;margin:0 0 14px}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.badge{font-size:12px;background:var(--green2);color:#3f6434;padding:6px 9px;border-radius:999px;font-weight:700}
+.add-row{display:grid;grid-template-columns:1.3fr .9fr .9fr auto;gap:8px}
+input,select{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:white;outline:none}
+input:focus,select:focus{border-color:#94b18a;box-shadow:0 0 0 3px rgba(85,122,70,.10)}
+.primary{border:0;background:var(--green);color:white;border-radius:12px;padding:11px 15px;font-weight:700}
+.secondary{border:1px solid var(--line);background:white;border-radius:12px;padding:10px 13px}
+.danger{border:0;background:#fff0ee;color:var(--red);border-radius:10px;padding:7px 9px}
+.list{display:flex;flex-direction:column;gap:9px;margin-top:14px;max-height:330px;overflow:auto;padding-right:2px}
+.item{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px}
+.item-main b{display:block;margin-bottom:4px}
+.meta{font-size:12px;color:var(--muted)}
+.dday{min-width:58px;text-align:center;font-size:12px;font-weight:800;padding:7px 8px;border-radius:999px;background:#edf4ea;color:#44683a}
+.dday.urgent{background:#fff1df;color:#b27026}.dday.expired{background:#ffebe8;color:#b3473d}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:white;border-radius:999px;padding:9px 12px}
+.chip.active{background:var(--green);border-color:var(--green);color:white}
+.family{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.family button{border:1px solid var(--line);background:white;padding:12px 7px;border-radius:14px}
+.family button.active{background:var(--green2);border-color:#9ebc94}
+.family .emoji{font-size:22px;display:block;margin-bottom:4px}
+.note{margin-top:12px;background:var(--cream);border-radius:14px;padding:12px;font-size:13px;color:#6c5a38;line-height:1.55}
+.generate{width:100%;border:0;background:linear-gradient(135deg,#557a46,#6c915e);color:white;padding:15px;border-radius:15px;font-weight:800;font-size:16px;margin-top:15px;box-shadow:0 8px 22px rgba(85,122,70,.22)}
+.recipe-wrap{grid-column:1/-1}
+.recipe-empty{padding:34px;text-align:center;color:var(--muted);border:1px dashed #ccd2c8;border-radius:18px}
+.recipe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.recipe{border:1px solid var(--line);border-radius:17px;padding:15px;background:linear-gradient(180deg,#fff,#fbfcf8)}
+.recipe .kicker{font-size:12px;color:var(--green);font-weight:800}
+.recipe h3{margin:7px 0 8px;font-size:17px}
+.recipe p{font-size:13px;line-height:1.6;color:var(--muted);margin:6px 0}
+.recipe ul{padding-left:18px;margin:8px 0;color:#454a42;font-size:13px;line-height:1.65}
+.tip{background:#f2f7ef;border-radius:12px;padding:10px;color:#51624b!important}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.stat{background:#f8faf6;border-radius:14px;padding:12px}
+.stat strong{display:block;font-size:20px}.stat span{font-size:12px;color:var(--muted)}
+.footer{text-align:center;color:var(--muted);font-size:12px;padding:22px 0 4px}
+
+.weekly-wrap{grid-column:1/-1}
+.weekly-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+.weekly-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.day-card{background:linear-gradient(180deg,#fff,#fbfcf8);border:1px solid var(--line);border-radius:16px;padding:12px;min-height:176px}
+.day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.day-head b{font-size:14px}.day-date{font-size:11px;color:var(--muted)}
+.meal-box{background:white;border:1px solid var(--line);border-radius:12px;padding:10px;min-height:100px}
+.meal-box.empty{border-style:dashed;color:var(--muted);display:grid;place-items:center;text-align:center;font-size:12px}
+.meal-title{font-size:13px;font-weight:800;line-height:1.4;margin-bottom:5px}
+.meal-sub{font-size:11px;color:var(--muted);line-height:1.45}
+.meal-buttons{display:flex;gap:6px;margin-top:8px}
+.meal-buttons button{font-size:11px;padding:6px 8px;border-radius:9px}
+.day-add{width:100%;margin-top:9px;border:0;border-radius:10px;padding:8px 9px;background:var(--green2);color:#45643c;font-weight:800}
+.recipe-select-btn{width:100%;margin-top:10px;border:1px solid #9ebc94;background:#f3f8f0;color:#3f6434;border-radius:11px;padding:9px;font-weight:800}
+.modal-backdrop{position:fixed;inset:0;background:rgba(30,36,27,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:999}
+.modal-backdrop.show{display:flex}
+.modal{width:min(560px,100%);background:white;border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.20)}
+.modal h3{margin:0 0 12px;font-size:18px}
+.modal-list{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto}
+.modal-option{width:100%;text-align:left;border:1px solid var(--line);background:white;border-radius:13px;padding:12px}
+.modal-option:hover{background:#f8fbf6;border-color:#a8c09e}
+.modal-option b{display:block;margin-bottom:4px}.modal-option span{font-size:12px;color:var(--muted)}
+.modal-close{width:100%;margin-top:12px}
+
+
+/* Mealkit concept additions */
+.people-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.people-card{border:1px solid var(--line);background:white;border-radius:14px;padding:10px;text-align:center}
+.people-card .emoji{font-size:21px;display:block;margin-bottom:4px}
+.people-card label{font-size:12px;color:var(--muted);display:block;margin-bottom:7px}
+.people-stepper{display:flex;align-items:center;justify-content:center;gap:7px}
+.people-stepper button{width:28px;height:28px;border:1px solid var(--line);background:white;border-radius:9px}
+.people-stepper strong{min-width:20px;text-align:center}
+.mealkit-card{border:1px solid #cfdcc9;background:linear-gradient(180deg,#f7fbf5,#fff);border-radius:18px;padding:17px;margin-bottom:15px}
+.mealkit-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.mealkit-title{font-size:19px;font-weight:900;margin:4px 0 6px}
+.mealkit-kicker{font-size:12px;color:var(--green);font-weight:800}
+.mealkit-serving{font-size:12px;background:var(--green2);color:#3f6434;padding:6px 9px;border-radius:999px;font-weight:800;white-space:nowrap}
+.kit-components{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.kit-component{border:1px solid var(--line);background:white;border-radius:12px;padding:10px}
+.kit-component b{display:block;font-size:13px;margin-bottom:4px}
+.kit-component span{font-size:12px;color:var(--muted)}
+.quantity-wrap{display:grid;grid-template-columns:1fr .48fr;gap:6px}
+.quantity-unit{min-width:68px}
+.capacity-badge{font-size:11px;padding:5px 7px;border-radius:999px;background:#eef5ea;color:#45643c;font-weight:800}
+.recipe-from-kit{font-size:11px;color:var(--green);font-weight:800;margin-bottom:5px}
+
+.ingredient-entry{
+  grid-template-columns:minmax(250px,1.45fr) minmax(220px,.9fr) minmax(165px,.72fr) auto !important;
+  align-items:center;
+}
+.purchase-date{
+  min-width:165px;
+  font-size:15px;
+}
+.ingredient-name{min-width:0}
+.quantity-wrap{display:grid;grid-template-columns:minmax(130px,1fr) 74px;gap:8px}
+.quantity-input{
+  min-width:130px;
+  font-size:16px;
+  font-weight:700;
+  text-align:right;
+  padding-right:14px;
+}
+.quantity-unit{min-width:74px}
+@media(max-width:820px){
+  .ingredient-entry{grid-template-columns:1fr !important}
+  .quantity-wrap{grid-template-columns:minmax(150px,1fr) 82px}
+  .quantity-input{min-width:150px}
+  .purchase-date{min-width:100%;width:100%}
+  .ingredient-entry .primary{grid-column:auto !important}
+}
+
+@media(max-width:820px){
+  .people-grid{grid-template-columns:repeat(2,1fr)}
+  .kit-components{grid-template-columns:1fr}
+}
+
+@media(max-width:820px){
+ .app{padding:14px}.header{align-items:flex-start}.today{display:none}.grid{grid-template-columns:1fr}
+ .add-row{grid-template-columns:1fr 1fr}.add-row input:first-child{grid-column:1/-1}.primary{grid-column:1/-1}
+ .recipe-grid{grid-template-columns:1fr}.family{grid-template-columns:repeat(2,1fr)}.weekly-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="logo">🥗</div>
+      <div><h1>스마트 셰프 AI</h1><div class="sub">냉장고 재료로 기본 밀키트를 만들고, 그 밀키트로 가족 맞춤 메뉴를 설계해요.</div></div>
+    </div>
+    <div class="today" id="today"></div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <div class="section-head"><h2>🧊 냉장고 재료</h2><span class="badge" id="ingredientCount">0개</span></div>
+      <div class="stat-row">
+        <div class="stat"><strong id="totalStat">0</strong><span>전체 재료</span></div>
+        <div class="stat"><strong id="urgentStat">AUTO</strong><span>재료 보관기한</span></div>
+        <div class="stat"><strong id="expiredStat">AUTO</strong><span>밀키트 보관기한</span></div>
+      </div>
+      <div class="add-row ingredient-entry">
+        <input id="name" class="ingredient-name" placeholder="재료명 (예: 삼겹살, 양배추)" />
+        <div class="quantity-wrap">
+          <input id="quantity" class="quantity-input" type="number" min="0" step="1" inputmode="decimal" placeholder="용량" />
+          <select id="unit" class="quantity-unit"><option value="g">g</option><option value="kg">kg</option></select>
+        </div>
+        <input id="purchaseDate" class="purchase-date" type="date" aria-label="구입일자" />
+        <button class="primary" id="addBtn">+ 추가</button>
+      </div>
+      <div class="note" style="margin-top:10px">
+        <b>재료명 + 용량 + 구입일자</b>만 입력하세요. AI가 구입일자를 참고해 재료별 권장 보관기한, 우선 사용 재료, 밀키트 보관기한을 자동 추정합니다.
+      </div>
+      <div class="list" id="ingredientList"></div>
+    </section>
+
+    <section class="card">
+      <h2>👨‍👩‍👧‍👦 가족 맞춤 설정</h2>
+      <div class="people-grid" id="familyCounts">
+        <div class="people-card" data-group="영아"><span class="emoji">👶</span><label>영아</label><div class="people-stepper"><button type="button" onclick="changePeople('영아',-1)">−</button><strong id="count-영아">0</strong><button type="button" onclick="changePeople('영아',1)">+</button></div></div>
+        <div class="people-card" data-group="유아"><span class="emoji">🧒</span><label>유아</label><div class="people-stepper"><button type="button" onclick="changePeople('유아',-1)">−</button><strong id="count-유아">1</strong><button type="button" onclick="changePeople('유아',1)">+</button></div></div>
+        <div class="people-card" data-group="어린이"><span class="emoji">👧</span><label>어린이</label><div class="people-stepper"><button type="button" onclick="changePeople('어린이',-1)">−</button><strong id="count-어린이">1</strong><button type="button" onclick="changePeople('어린이',1)">+</button></div></div>
+        <div class="people-card" data-group="성인"><span class="emoji">🧑</span><label>성인</label><div class="people-stepper"><button type="button" onclick="changePeople('성인',-1)">−</button><strong id="count-성인">2</strong><button type="button" onclick="changePeople('성인',1)">+</button></div></div>
+        <div class="people-card" data-group="노인"><span class="emoji">👵</span><label>노인</label><div class="people-stepper"><button type="button" onclick="changePeople('노인',-1)">−</button><strong id="count-노인">0</strong><button type="button" onclick="changePeople('노인',1)">+</button></div></div>
+      </div>
+      <div class="note" style="margin-top:10px">AI가 연령대별 인원 수를 바탕으로 <b>밀키트 총량과 배분량</b>을 조정하고, 서버가 냉장고 보유량을 다시 검산합니다.</div>
+      <h2 style="margin-top:20px">🍳 오늘의 스타일</h2>
+      <div class="chips" id="styles">
+        <button class="chip active">한식</button><button class="chip">양식</button><button class="chip">일식</button>
+        <button class="chip">덮밥</button><button class="chip">국·찌개</button><button class="chip">간단식</button>
+      </div>
+      <h2 style="margin-top:20px">🎯 우선 목표</h2>
+      <select id="goal">
+        <option>냉장고 재료 최대 활용</option><option>아이들이 잘 먹는 메뉴</option><option>단백질 충분히</option>
+        <option>채소 섭취 늘리기</option><option>20분 내 조리</option><option>자극적이지 않게</option>
+      </select>
+      <div class="note">아이와 함께 먹을 때는 <b>싱겁게 먼저 조리해 아이 몫을 덜어낸 뒤</b>, 성인 음식에 간장·소금·향신료를 추가하는 방식으로 제안합니다.</div>
+      <button class="generate" id="generateBtn">🥘 AI로 기본 밀키트 만들기</button>
+    </section>
+
+    <section class="card recipe-wrap">
+      <div class="section-head"><h2>🥘 AI 기본 밀키트 + 추천 메뉴</h2><span class="badge" id="recipeBadge">추천 전</span></div>
+      <div id="recipeArea" class="recipe-empty">재료를 2개 이상 넣고 <b>메뉴 만들기</b>를 눌러보세요.<br>Gemini가 냉장고 재료와 가족 인원에 맞춰 기본 밀키트를 설계하고, 그 밀키트로 만들 수 있는 메뉴를 제안합니다.</div>
+      <div class="toolbar">
+        <button class="secondary" id="sampleBtn">샘플 재료 넣기</button>
+        <button class="secondary" id="shoppingBtn">🛒 장보기 메모 만들기</button>
+        <button class="secondary" id="clearBtn">전체 초기화</button>
+      </div>
+      <div id="shoppingNote" class="note" style="display:none"></div>
+    </section>
+
+    <section class="card weekly-wrap">
+      <div class="weekly-head">
+        <div>
+          <h2 style="margin-bottom:4px">📅 이번 주 식단</h2>
+          <div class="sub">AI가 만든 메뉴를 일요일부터 금요일까지 골라 저장할 수 있어요.</div>
+        </div>
+        <button class="secondary" id="clearWeekBtn">이번 주 비우기</button>
+      </div>
+      <div class="weekly-grid" id="weeklyGrid"></div>
+    </section>
+
+  </main>
+  <div class="footer">Smart Chef AI · 재료는 브라우저에 저장되고 API 키는 서버에만 보관됩니다.</div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const storeKey='smartChefIngredients-v2';
+
+function localDateISO(d=new Date()){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return localDateISO(d)}
+function todayISO(){return localDateISO(new Date())}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+let ingredients = JSON.parse(localStorage.getItem(storeKey)||'null') || [
+  {id:1,name:'달걀',quantity:300,unit:'g',purchaseDate:todayISO()},
+  {id:2,name:'양배추',quantity:500,unit:'g',purchaseDate:todayISO()},
+  {id:3,name:'삼겹살',quantity:600,unit:'g',purchaseDate:todayISO()}
+];
+
+function save(){localStorage.setItem(storeKey,JSON.stringify(ingredients))}
+function render(){
+  $('#ingredientCount').textContent=ingredients.length+'개';
+  $('#totalStat').textContent=ingredients.length;
+  $('#urgentStat').textContent='AUTO';
+  $('#expiredStat').textContent='AUTO';
+
+  const list=$('#ingredientList');
+  if(!ingredients.length){
+    list.innerHTML='<div class="recipe-empty">등록된 재료가 없습니다.</div>';
+    return;
+  }
+
+  const storageMap = window.latestStorageMap || {};
+
+  list.innerHTML=ingredients.map(x=>{
+    const storage = storageMap[x.name];
+    return `
+      <div class="item">
+        <div class="item-main">
+          <b>${esc(x.name)}</b>
+          <div class="meta">
+            <span class="capacity-badge">${esc(String(x.quantity || '미입력'))}${esc(x.unit || 'g')}</span>
+            · 구입 ${esc(x.purchaseDate || '미입력')}
+            · ${storage ? `<b>${esc(storage.storageLife)}</b>` : '보관기한 AI 자동 추정'}
+          </div>
+          ${storage?.note ? `<div class="meta" style="margin-top:4px">${esc(storage.note)}</div>` : ''}
+        </div>
+        <span class="dday">${storage ? 'AI 완료' : 'AI 추정'}</span>
+        <button class="danger" onclick="removeItem(${x.id})">삭제</button>
+      </div>`;
+  }).join('');
+}
+window.removeItem=id=>{ingredients=ingredients.filter(x=>x.id!==id);save();render()}
+
+$('#today').textContent=new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'}).format(new Date());
+$('#purchaseDate').value=todayISO();
+
+$('#addBtn').onclick=()=>{
+  const name=$('#name').value.trim();
+  const quantity=Number($('#quantity').value);
+  const unit=$('#unit').value;
+  const purchaseDate=$('#purchaseDate').value;
+
+  if(!name||!quantity||quantity<=0||!purchaseDate){
+    alert('재료명, 용량, 구입일자를 모두 입력해 주세요.');
+    return;
+  }
+
+  if(purchaseDate > todayISO()){
+    alert('구입일자는 오늘보다 미래일 수 없습니다.');
+    return;
+  }
+
+  ingredients.push({
+    id:Date.now(),
+    name,
+    quantity,
+    unit,
+    purchaseDate
+  });
+
+  $('#name').value='';
+  $('#quantity').value='';
+  $('#purchaseDate').value=todayISO();
+  window.latestStorageMap={};
+  save();
+  render();
+}
+$('#name').addEventListener('keydown',e=>{if(e.key==='Enter')$('#addBtn').click()});
+
+$$('#styles .chip').forEach(b=>b.onclick=()=>{$$('#styles .chip').forEach(x=>x.classList.remove('active'));b.classList.add('active')});
+
+
+const familyCountKey = 'smartChefFamilyCounts-v1';
+let familyCounts = JSON.parse(localStorage.getItem(familyCountKey) || 'null') || {
+  '영아':0, '유아':1, '어린이':1, '성인':2, '노인':0
+};
+
+function renderFamilyCounts(){
+  Object.entries(familyCounts).forEach(([group,count])=>{
+    const el = document.getElementById(`count-${group}`);
+    if(el) el.textContent = count;
+  });
+}
+
+window.changePeople = function(group, delta){
+  familyCounts[group] = Math.max(0, Math.min(12, (familyCounts[group] || 0) + delta));
+  localStorage.setItem(familyCountKey, JSON.stringify(familyCounts));
+  renderFamilyCounts();
+};
+
+function getFamilyCounts(){
+  return {...familyCounts};
+}
+
+function totalPeople(){
+  return Object.values(familyCounts).reduce((a,b)=>a+b,0);
+}
+
+function style(){return $('#styles .chip.active')?.textContent||'한식'}
+
+const templates={
+ '한식':[
+   ['부드러운 재료 덮밥','재료를 한입 크기로 익혀 밥 위에 올리는 실패 확률 낮은 한 그릇 메뉴'],
+   ['냉장고 채소 달걀전','잘게 썬 재료와 달걀을 섞어 약불에 촉촉하게 부치는 메뉴'],
+   ['순한 간장 볶음','재료를 충분히 익히고 마지막에 간장을 아주 조금 넣는 가족 반찬']
+ ],
+ '양식':[
+   ['크리미 팬 프라이','재료를 노릇하게 익힌 뒤 우유 또는 물을 더해 부드럽게 마무리'],
+   ['미니 오믈렛 플레이트','달걀과 남은 채소를 이용한 폭신한 오믈렛'],
+   ['토마토풍 원팬 요리','토마토가 있다면 함께 졸이고 없으면 담백한 팬소스로 완성']
+ ],
+ '일식':[
+   ['순한 데리야키 덮밥','아이 몫은 무간으로 먼저 덜고 성인 몫에 간장 소스를 더하는 덮밥'],
+   ['폭신 계란찜과 토핑','냉장고 재료를 잘게 다져 넣는 부드러운 계란찜'],
+   ['채소 고기 볶음우동풍','면이 있으면 우동, 없으면 밥과 곁들이는 순한 볶음']
+ ],
+ '덮밥':[
+   ['한그릇 냉장고 덮밥','단백질과 채소를 함께 볶아 밥에 얹는 균형 메뉴'],
+   ['달걀 촉촉 덮밥','익힌 재료에 달걀물을 넣어 촉촉하게 익히는 메뉴'],
+   ['구운 재료 비빔밥','재료를 각각 구워 밥과 섞어 먹는 간단 비빔밥']
+ ],
+ '국·찌개':[
+   ['맑은 냉장고 국','채소와 단백질을 푹 끓이고 아이 몫을 먼저 덜어내는 맑은 국'],
+   ['달걀 채소국','부드러운 채소에 달걀물을 풀어 15분 안에 만드는 국'],
+   ['순한 된장국풍','된장은 성인 몫에만 소량 풀어 염도를 조절하는 국']
+ ],
+ '간단식':[
+   ['10분 재료 볶음','잘 익는 순서대로 넣고 볶아 한 접시로 끝내는 메뉴'],
+   ['전자레인지 달걀찜','재료를 잘게 썰어 달걀과 섞어 간단히 익히는 메뉴'],
+   ['한입 주먹밥','익힌 재료를 잘게 다져 밥과 뭉치는 아이 친화 메뉴']
+ ]
+};
+
+
+function recipeCard(r, i){
+  const ingredientsText = (r.ingredients || []).map(esc).join(' · ');
+  const extra = (r.extraIngredients || []).length
+    ? (r.extraIngredients || []).map(esc).join(' · ')
+    : '추가 재료 없음';
+  const steps = (r.steps || []).map(s => `<li>${esc(s)}</li>`).join('');
+
+  return `<article class="recipe">
+    <div class="recipe-from-kit">기본 밀키트 활용 메뉴 ${i+1}</div>
+    <h3>${esc(r.name || '추천 메뉴')}</h3>
+    <p>${esc(r.summary || '')}</p>
+    <p><b>⏱ 조리시간</b> ${esc(r.cookTime || '약 20분')}</p>
+    <p><b>🥬 밀키트에서 사용하는 구성</b><br>${ingredientsText || '기본 밀키트 활용'}</p>
+    <p><b>🛒 추가 재료</b><br>${extra}</p>
+    <ul>${steps}</ul>
+    <p class="tip"><b>🧒 아이용</b><br>${esc(r.childTip || '')}</p>
+    <p class="tip"><b>🧑 성인·노인용 마무리</b><br>${esc(r.adultFinish || '')}</p>
+    <p><b>💚 영양 포인트</b><br>${esc(r.nutrition || '')}</p>
+    ${r.safetyNote ? `<p class="meta">※ ${esc(r.safetyNote)}</p>` : ''}
+    <button class="recipe-select-btn" onclick="openDayPicker(${i})">📅 이 메뉴를 식단에 추가</button>
+  </article>`;
+}
+
+
+function renderMealkit(mealkit){
+  if(!mealkit) return '';
+
+  const components = (mealkit.components || []).map(c => `
+    <div class="kit-component">
+      <b>${esc(c.name || '')}</b>
+      <span>
+        사용 <strong>${esc(String(c.amount || ''))}${esc(c.unit || 'g')}</strong>
+        · 보유 ${esc(String(c.inventoryAmount ?? ''))}${esc(c.inventoryUnit || '')}
+        · 잔량 ${esc(String(c.remainingAmount ?? ''))}${esc(c.remainingUnit || '')}
+      </span>
+      <span style="display:block;margin-top:5px">${esc(c.prep || '')}</span>
+    </div>
+  `).join('');
+
+  const allocation = (mealkit.allocation || []).map(a =>
+    `${esc(a.group || '')} ${esc(String(a.count || 0))}명: ${esc(String(a.amount || ''))}${esc(a.unit || 'g')}`
+  ).join(' · ');
+
+  const baseSteps = (mealkit.baseSteps || []).map(s => `<li>${esc(s)}</li>`).join('');
+
+  return `<div class="mealkit-card">
+    <div class="mealkit-head">
+      <div>
+        <div class="mealkit-kicker">AI가 설계한 기본 밀키트</div>
+        <div class="mealkit-title">${esc(mealkit.name || '우리집 기본 밀키트')}</div>
+        <p>${esc(mealkit.description || '')}</p>
+      </div>
+      <span class="mealkit-serving">${esc(String(mealkit.totalServings || totalPeople()))}인 기준</span>
+    </div>
+    <div class="kit-components">${components}</div>
+    <p style="margin-top:12px"><b>⚖️ 연령대별 권장 배분</b><br>${allocation || '가족 구성에 맞춰 배분'}</p>
+    <p><b>👩‍🍳 기본 밀키트 준비법</b></p>
+    <ul>${baseSteps}</ul>
+    <p class="tip"><b>🧊 밀키트 권장 보관기한</b><br>${esc(mealkit.storageLife || mealkit.storageTip || '')}</p>
+    <p><b>🥬 재료별 권장 보관기한</b></p>
+    <ul>${(mealkit.ingredientStorage || []).map(s =>
+      `<li><b>${esc(s.name || '')}</b>: ${esc(s.storageLife || '')}${s.note ? ` · ${esc(s.note)}` : ''}</li>`
+    ).join('')}</ul>
+  </div>`;
+}
+
+async function generate(){
+  if(ingredients.length < 2){
+    alert('재료를 2개 이상 등록해 주세요.');
+    return;
+  }
+  if(totalPeople() < 1){
+    alert('가족 인원을 1명 이상 지정해 주세요.');
+    return;
+  }
+
+  const button = $('#generateBtn');
+  const oldText = button.textContent;
+  button.disabled = true;
+  button.textContent = '🤖 AI가 가족 메뉴를 설계하고 있어요...';
+  $('#recipeBadge').textContent = 'AI 생성 중';
+
+  try{
+    const response = await fetch('/api/recipe', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        ingredients,
+        familyCounts:getFamilyCounts(),
+        style:style(),
+        goal:$('#goal').value
+      })
+    });
+
+    const data = await response.json();
+
+    if(!response.ok){
+      throw new Error(data.error || 'AI 메뉴 생성에 실패했습니다.');
+    }
+
+    const urgent = [];
+
+    $('#recipeArea').className = '';
+    $('#recipeArea').innerHTML = `
+      <div class="note" style="margin:0 0 13px">
+        <b>${esc($('#goal').value)}</b> 기준으로 기본 밀키트를 먼저 설계했습니다.
+         재료별 보관기한과 밀키트 보관기한은 AI가 함께 추정했습니다.
+      </div>
+      ${renderMealkit(data.mealkit)}
+      <div class="recipe-grid">
+        ${(data.recipes || []).map(recipeCard).join('')}
+      </div>
+    `;
+
+    $('#recipeBadge').textContent = `${(data.recipes || []).length}가지 AI 추천`;
+    window.latestMealkit = data.mealkit || null;
+    window.latestStorageMap = Object.fromEntries(
+      (data.mealkit?.ingredientStorage || []).map(item => [item.name, item])
+    );
+    render();
+    window.latestRecipes = data.recipes || [];
+    window.latestShoppingItems = [
+      ...new Set((data.recipes || []).flatMap(r => r.extraIngredients || []))
+    ];
+  }catch(error){
+    console.error(error);
+    $('#recipeArea').className = 'recipe-empty';
+    $('#recipeArea').innerHTML =
+      `<b>AI 추천을 불러오지 못했습니다.</b><br>${esc(error.message)}<br><br>
+       <span class="meta">서버가 실행 중인지, .env의 GEMINI_API_KEY가 올바른지 확인해 주세요.</span>`;
+    $('#recipeBadge').textContent = '연결 오류';
+  }finally{
+    button.disabled = false;
+    button.textContent = oldText;
+  }
+}
+
+
+$('#generateBtn').onclick=generate;
+$('#sampleBtn').onclick=()=>{
+  ingredients=[
+    {id:Date.now()+1,name:'삼겹살',quantity:600,unit:'g',purchaseDate:addDays(-1)},
+    {id:Date.now()+2,name:'양배추',quantity:500,unit:'g',purchaseDate:addDays(-2)},
+    {id:Date.now()+3,name:'토마토',quantity:400,unit:'g',purchaseDate:addDays(-1)},
+    {id:Date.now()+4,name:'달걀',quantity:300,unit:'g',purchaseDate:addDays(-3)},
+    {id:Date.now()+5,name:'버터',quantity:100,unit:'g',purchaseDate:addDays(-5)}
+  ];window.latestStorageMap={};save();render();
+}
+$('#clearBtn').onclick=()=>{
+  if(confirm('등록된 재료를 모두 지울까요?')){ingredients=[];window.latestStorageMap={};save();render();$('#recipeArea').className='recipe-empty';$('#recipeArea').innerHTML='재료를 다시 등록한 뒤 메뉴를 만들어 보세요.';$('#recipeBadge').textContent='추천 전';$('#shoppingNote').style.display='none'}
+}
+$('#shoppingBtn').onclick=()=>{
+  const aiItems = window.latestShoppingItems || [];
+
+  $('#shoppingNote').style.display='block';
+
+  if(aiItems.length){
+    $('#shoppingNote').innerHTML =
+      '<b>🛒 추천 메뉴에 필요한 추가 재료</b><br>' +
+      [...new Set(aiItems)].map(x=>'• '+esc(x)).join('<br>');
+  }else{
+    $('#shoppingNote').innerHTML =
+      '<b>🛒 장보기 메모</b><br>AI 메뉴를 먼저 생성하면 부족한 재료만 자동으로 정리합니다.';
+  }
+}
+
+const mealPlanKey = 'smartChefWeeklyPlan-v2';
+let weeklyPlan = JSON.parse(localStorage.getItem(mealPlanKey) || '{}');
+
+function saveWeeklyPlan(){
+  localStorage.setItem(mealPlanKey, JSON.stringify(weeklyPlan));
+}
+
+function getWeekDays(){
+  const now = new Date();
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - now.getDay());
+  const labels = ['일','월','화','수','목','금'];
+
+  return labels.map((name, i) => {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    return {
+      name,
+      key: localDateISO(d),
+      label: `${d.getMonth()+1}/${d.getDate()}`
+    };
+  });
+}
+
+function renderWeeklyPlan(){
+  $('#weeklyGrid').innerHTML = getWeekDays().map(day => {
+    const meal = weeklyPlan[day.key];
+
+    if(!meal){
+      return `<div class="day-card">
+        <div class="day-head"><b>${day.name}요일</b><span class="day-date">${day.label}</span></div>
+        <div class="meal-box empty">아직 메뉴가 없어요.</div>
+        <button class="day-add" onclick="openDayMenu('${day.key}','${day.name}요일')">+ 메뉴 선택</button>
+      </div>`;
+    }
+
+    return `<div class="day-card">
+      <div class="day-head"><b>${day.name}요일</b><span class="day-date">${day.label}</span></div>
+      <div class="meal-box">
+        <div class="meal-title">${esc(meal.name)}</div>
+        <div class="meal-sub">${esc(meal.cookTime || '')}<br>${esc(meal.summary || '')}</div>
+        <div class="meal-buttons">
+          <button class="secondary" onclick="openDayMenu('${day.key}','${day.name}요일')">변경</button>
+          <button class="danger" onclick="removeMeal('${day.key}')">삭제</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.removeMeal = function(dayKey){
+  delete weeklyPlan[dayKey];
+  saveWeeklyPlan();
+  renderWeeklyPlan();
+};
+
+window.openDayPicker = function(recipeIndex){
+  const recipe = window.latestRecipes?.[recipeIndex];
+  if(!recipe){
+    alert('먼저 AI 추천 메뉴를 생성해 주세요.');
+    return;
+  }
+
+  $('#mealModalTitle').textContent = `"${recipe.name}"을 어느 날에 넣을까요?`;
+  $('#mealModalList').innerHTML = getWeekDays().map(day => `
+    <button class="modal-option" onclick="assignRecipeToDay(${recipeIndex},'${day.key}')">
+      <b>${day.name}요일 · ${day.label}</b>
+      <span>${weeklyPlan[day.key] ? `현재: ${esc(weeklyPlan[day.key].name)}` : '비어 있음'}</span>
+    </button>
+  `).join('');
+  $('#mealModal').classList.add('show');
+};
+
+window.openDayMenu = function(dayKey, dayName){
+  const recipes = window.latestRecipes || [];
+  $('#mealModalTitle').textContent = `${dayName} 메뉴 선택`;
+
+  $('#mealModalList').innerHTML = recipes.length
+    ? recipes.map((recipe, i) => `
+      <button class="modal-option" onclick="assignRecipeToDay(${i},'${dayKey}')">
+        <b>${esc(recipe.name || `추천 메뉴 ${i+1}`)}</b>
+        <span>${esc(recipe.cookTime || '')} · ${esc(recipe.summary || '')}</span>
+      </button>`).join('')
+    : '<div class="recipe-empty">먼저 위에서 AI 메뉴를 생성해 주세요.</div>';
+
+  $('#mealModal').classList.add('show');
+};
+
+window.assignRecipeToDay = function(recipeIndex, dayKey){
+  const recipe = window.latestRecipes?.[recipeIndex];
+  if(!recipe) return;
+
+  weeklyPlan[dayKey] = {
+    name: recipe.name || `추천 메뉴 ${recipeIndex+1}`,
+    summary: recipe.summary || '',
+    cookTime: recipe.cookTime || '',
+    ingredients: recipe.ingredients || [],
+    extraIngredients: recipe.extraIngredients || [],
+    steps: recipe.steps || [],
+    childTip: recipe.childTip || '',
+    adultFinish: recipe.adultFinish || '',
+    nutrition: recipe.nutrition || '',
+    safetyNote: recipe.safetyNote || ''
+  };
+
+  saveWeeklyPlan();
+  renderWeeklyPlan();
+  $('#mealModal').classList.remove('show');
+};
+
+$('#mealModalClose').onclick = () => $('#mealModal').classList.remove('show');
+$('#mealModal').addEventListener('click', e => {
+  if(e.target === $('#mealModal')) $('#mealModal').classList.remove('show');
+});
+
+$('#clearWeekBtn').onclick = () => {
+  if(confirm('이번 주 일요일부터 금요일까지 식단을 모두 비울까요?')){
+    weeklyPlan = {};
+    saveWeeklyPlan();
+    renderWeeklyPlan();
+  }
+};
+
+render();
+renderFamilyCounts();
+renderWeeklyPlan();
+</script>
+
+<div class="modal-backdrop" id="mealModal">
+  <div class="modal">
+    <h3 id="mealModalTitle">메뉴 선택</h3>
+    <div class="modal-list" id="mealModalList"></div>
+    <button class="secondary modal-close" id="mealModalClose">닫기</button>
+  </div>
+</div>
+
+</body>
+</html>
